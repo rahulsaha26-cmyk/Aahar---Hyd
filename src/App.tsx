@@ -953,7 +953,7 @@ export default function App() {
           </div>
         </section>
 
-        <section id="meals" className="page-shell py-20 sm:py-24">
+        <section id="meals" className="page-shell py-12 sm:py-16">
           <div data-reveal className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
             <div>
               <p className="section-label">The AAHAR menu</p>
@@ -1138,7 +1138,7 @@ export default function App() {
           </div>
         </section>
 
-        <section id="how-it-works" className="page-shell py-20 sm:py-24">
+        <section id="how-it-works" className="page-shell py-12 sm:py-16">
           <div
             data-reveal
             className="rounded-[34px] bg-white/60 p-6 dark:bg-[#123235] sm:p-10 lg:p-14"
@@ -1200,7 +1200,7 @@ export default function App() {
           </div>
         </section>
 
-        <section id="plans" className="page-shell py-20 sm:py-24">
+        <section id="plans" className="page-shell py-12 sm:py-16">
           <div data-reveal className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
             <div>
               <p className="section-label">Subscription model</p>
@@ -1271,7 +1271,7 @@ export default function App() {
           </div>
         </section>
 
-        <section id="protein" className="page-shell py-20 sm:py-24">
+        <section id="protein" className="page-shell py-12 sm:py-16">
           <div
             data-reveal
             className="grid overflow-hidden rounded-[34px] bg-[#a9bb9c] text-[#101313] lg:grid-cols-[1.1fr_.9fr]"
@@ -1339,7 +1339,7 @@ export default function App() {
           </div>
         </section>
 
-        <section id="cta" className="page-shell py-20 sm:py-24">
+        <section id="cta" className="page-shell py-12 sm:py-16">
           <div
             data-reveal
             className="rounded-[34px] bg-[#163b3d] px-6 py-14 text-center text-white dark:bg-[#153639] sm:px-10 sm:py-20"
