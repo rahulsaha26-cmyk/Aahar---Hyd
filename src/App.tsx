@@ -33,9 +33,9 @@ function Icon({ name, className = "" }: { name: IconName; className?: string }) 
   const paths: Record<IconName, React.ReactNode> = {
     cart: (
       <>
-        <circle cx="9" cy="21" r="1" />
+        <circle cx="8" cy="21" r="1" />
         <circle cx="19" cy="21" r="1" />
-        <path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6" />
+        <path d="M2 2h2l2.6 12.4a2 2 0 0 0 2 1.6h9.8a2 2 0 0 0 2-1.6L22 7H5" />
       </>
     ),
     arrow: (
@@ -808,7 +808,7 @@ export default function App() {
               className="icon-button relative"
               aria-label={`Open cart${cart.length ? `, ${cart.length} item${cart.length === 1 ? "" : "s"}` : ""}`}
             >
-              <Icon key={cartItemCount} name="cart" className="cart-bump size-4.5" />
+              <Icon name="cart" className="size-4.5" />
               {cart.length > 0 && (
                 <span
                   key={cartItemCount}

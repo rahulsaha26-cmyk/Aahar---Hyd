@@ -336,21 +336,6 @@ a:hover .logo-mark {
   animation: toast-enter 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
-@keyframes cart-bump {
-  0%,
-  100% {
-    scale: 1;
-  }
-
-  45% {
-    scale: 1.24;
-  }
-}
-
-.cart-bump {
-  animation: cart-bump 320ms ease-out;
-}
-
 @keyframes cart-count-pop {
   from {
     opacity: 0;
