@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import brandLogo from "./assets/aahar-brand-logo.png";
+import brandLogo from "./assets/aahar-brand-logo.jpg";
 import proteinCoffee from "./assets/protein-coffee.jpg";
 import proteinMockup from "./assets/aahar-protein-mockup.svg";
 import proteinStrawberry from "./assets/protein-strawberry.jpg";
