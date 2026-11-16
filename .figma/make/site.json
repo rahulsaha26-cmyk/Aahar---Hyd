@@ -1,5 +1,9 @@
 {
+  "title": "AAHAR",
   "description": "Order authentic Hyderabad-style healthy meals, subscribe for daily delivery, and discover plant-based protein and evidence-backed wellness products.",
+  "icons": {
+    "icon": "/favicon.jpg"
+  },
   "robots": {
     "index": false
   },
