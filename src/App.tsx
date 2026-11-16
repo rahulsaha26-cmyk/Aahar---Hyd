@@ -18,6 +18,7 @@ const dishPhoto = (id: string) =>
 
 type IconName =
   | "arrow"
+  | "cart"
   | "check"
   | "clock"
   | "leaf"
@@ -30,6 +31,13 @@ type IconName =
 
 function Icon({ name, className = "" }: { name: IconName; className?: string }) {
   const paths: Record<IconName, React.ReactNode> = {
+    cart: (
+      <>
+        <circle cx="9" cy="21" r="1" />
+        <circle cx="19" cy="21" r="1" />
+        <path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6" />
+      </>
+    ),
     arrow: (
       <>
         <path d="M5 12h14" />
@@ -588,6 +596,7 @@ export default function App() {
   };
 
   const activeCategories = menuType === "veg" ? menuCategories : nonVegMenuCategories;
+  const cartItemCount = cart.reduce((total, item) => total + item.quantity, 0);
   const cartSubtotal = cart.reduce((total, item) => total + item.price * item.quantity, 0);
   const hasPlan = cart.some((item) => item.isPlan);
   const deliveryFee = cart.length && !hasPlan && cartSubtotal < 299 ? 30 : 0;
@@ -799,10 +808,13 @@ export default function App() {
               className="icon-button relative"
               aria-label={`Open cart${cart.length ? `, ${cart.length} item${cart.length === 1 ? "" : "s"}` : ""}`}
             >
-              <Icon name="box" className="size-4.5" />
+              <Icon key={cartItemCount} name="cart" className="cart-bump size-4.5" />
               {cart.length > 0 && (
-                <span className="absolute -right-1 -top-1 grid size-5 place-items-center rounded-full bg-[#a85f4f] text-[10px] font-bold text-white">
-                  {cart.reduce((total, item) => total + item.quantity, 0)}
+                <span
+                  key={cartItemCount}
+                  className="cart-count-pop absolute -right-1 -top-1 grid size-5 place-items-center rounded-full bg-[#a85f4f] text-[10px] font-bold text-white"
+                >
+                  {cartItemCount}
                 </span>
               )}
             </button>
@@ -820,7 +832,7 @@ export default function App() {
 
         {menuOpen && (
           <div className="page-shell pb-4 md:hidden">
-            <div className="rounded-[24px] bg-white p-3 shadow-[0_18px_50px_rgba(34,52,58,.12)] dark:bg-[#17383b]">
+            <div className="mobile-menu-enter rounded-[24px] bg-white p-3 shadow-[0_18px_50px_rgba(34,52,58,.12)] dark:bg-[#17383b]">
               {[
                 ["Meals", "meals"],
                 ["How it works", "how-it-works"],
@@ -1372,7 +1384,10 @@ export default function App() {
               ))}
             </div>
 
-            <div className="mt-6 rounded-[30px] bg-white/60 p-6 dark:bg-[#123235] sm:p-10">
+            <div
+              key={surveyStep}
+              className="survey-step-enter mt-6 rounded-[30px] bg-white/60 p-6 dark:bg-[#123235] sm:p-10"
+            >
               <p className="section-label">{surveySteps[surveyStep].label}</p>
               <h2 className="text-3xl font-semibold tracking-[-.04em]">
                 {surveySteps[surveyStep].title}
@@ -1481,10 +1496,11 @@ export default function App() {
             </p>
           </div>
           <div className="mt-8 grid gap-4 md:grid-cols-3">
-            {recommendedMeals.map((meal) => (
+            {recommendedMeals.map((meal, index) => (
               <article
                 key={meal.name}
-                className="overflow-hidden rounded-[26px] bg-white/60 dark:bg-[#153639]"
+                className="recommendation-card overflow-hidden rounded-[26px] bg-white/60 dark:bg-[#153639]"
+                style={{ animationDelay: `${index * 90}ms` }}
               >
                 <img
                   src={meal.image}
@@ -1569,7 +1585,7 @@ export default function App() {
                   {cart.map((item) => (
                     <div
                       key={item.key}
-                      className="flex items-center gap-3 rounded-[20px] bg-[#eef3f4] p-3 dark:bg-[#1a3d40]"
+                      className="cart-item-enter flex items-center gap-3 rounded-[20px] bg-[#eef3f4] p-3 dark:bg-[#1a3d40]"
                     >
                       {item.image ? (
                         <img
@@ -1597,7 +1613,10 @@ export default function App() {
                         >
                           −
                         </button>
-                        <span className="w-5 text-center text-sm font-semibold">
+                        <span
+                          key={item.quantity}
+                          className="quantity-pop w-5 text-center text-sm font-semibold"
+                        >
                           {item.quantity}
                         </span>
                         <button
@@ -1725,7 +1744,7 @@ export default function App() {
 
       {view === "done" && (
         <main className="page-shell py-20 sm:py-28">
-          <div className="mx-auto max-w-xl rounded-[34px] bg-white/60 p-8 text-center dark:bg-[#123235] sm:p-14">
+          <div className="success-enter mx-auto max-w-xl rounded-[34px] bg-white/60 p-8 text-center dark:bg-[#123235] sm:p-14">
             <div className="mx-auto grid size-16 place-items-center rounded-full bg-[#dfe9d4] text-[#45583c] dark:bg-[#294b41] dark:text-[#c6ddbb]">
               <Icon name="check" className="size-7" />
             </div>
@@ -1822,7 +1841,7 @@ export default function App() {
                         key={size}
                         onClick={() => setPortion(size)}
                         aria-pressed={portion === size}
-                        className={`flex-1 rounded-full px-3 py-2 text-sm font-semibold ${
+                        className={`dish-option flex-1 rounded-full px-3 py-2 text-sm font-semibold ${
                           portion === size
                             ? "bg-[#688456] text-white"
                             : "bg-black/5 dark:bg-white/10"
@@ -1836,7 +1855,7 @@ export default function App() {
                   <button
                     onClick={() => setExtraProtein((enabled) => !enabled)}
                     aria-pressed={extraProtein}
-                    className={`rounded-full px-3 py-2 text-left text-sm font-semibold ${
+                    className={`dish-option rounded-full px-3 py-2 text-left text-sm font-semibold ${
                       extraProtein
                         ? "bg-[#dfe9d4] text-[#45583c] dark:bg-[#294b41] dark:text-[#c6ddbb]"
                         : "bg-black/5 dark:bg-white/10"
@@ -1847,7 +1866,7 @@ export default function App() {
                 </div>
                 <button
                   onClick={addDishToCart}
-                  className="primary-button mt-auto justify-center py-3.5 sm:mt-8"
+                  className="primary-button add-to-cart-button mt-auto justify-center py-3.5 sm:mt-8"
                 >
                   Add to cart <Icon name="arrow" className="size-4" />
                 </button>
@@ -1860,7 +1879,8 @@ export default function App() {
       {toast && (
         <div
           role="status"
-          className="fixed bottom-5 left-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 rounded-full bg-[#163b3d] px-5 py-3 text-center text-sm font-semibold text-white shadow-xl"
+          key={toast}
+          className="toast-enter fixed bottom-5 left-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 rounded-full bg-[#163b3d] px-5 py-3 text-center text-sm font-semibold text-white shadow-xl"
         >
           {toast}
         </div>
