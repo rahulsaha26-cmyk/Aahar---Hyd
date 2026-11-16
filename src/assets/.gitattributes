@@ -1,2 +1,3 @@
 # Vite must bundle these image bytes directly; Vercel does not hydrate Git LFS pointers.
 *.jpg -filter -diff -merge -text
+*.png -filter -diff -merge -text

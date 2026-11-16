@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
 import brandLogo from "./assets/aahar-brand-logo.jpg";
-import proteinCoffee from "./assets/protein-coffee.jpg";
-import proteinMockup from "./assets/aahar-protein-mockup.svg";
-import proteinStrawberry from "./assets/protein-strawberry.jpg";
+import proteinBarChocolate from "./assets/protein-bar-chocolate-crunch.png";
+import proteinBarCoffee from "./assets/protein-bar-coffee-mocha.png";
+import proteinBarKesar from "./assets/protein-bar-kesar-badam.png";
+import proteinPowderChocolate from "./assets/protein-powder-chocolate.png";
+import proteinPowderCoffee from "./assets/protein-powder-coffee-mocha.png";
+import proteinPowderKesar from "./assets/protein-powder-kesar-badam.png";
 
 const images = {
   hero: "https://images.unsplash.com/photo-1585937421612-70a008356fbe?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&q=85&w=1200",
@@ -15,6 +18,18 @@ const images = {
 
 const dishPhoto = (id: string) =>
   `https://images.unsplash.com/photo-${id}?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&q=85&w=700`;
+
+const proteinBars = [
+  { flavor: "Chocolate Crunch", src: proteinBarChocolate },
+  { flavor: "Coffee Mocha", src: proteinBarCoffee },
+  { flavor: "Kesar Badam", src: proteinBarKesar },
+];
+
+const proteinPowders = [
+  { flavor: "Chocolate", src: proteinPowderChocolate },
+  { flavor: "Kesar Badam", src: proteinPowderKesar },
+  { flavor: "Coffee Mocha", src: proteinPowderCoffee },
+];
 
 type IconName =
   | "arrow"
@@ -1271,9 +1286,9 @@ export default function App() {
               </p>
               <div className="mt-7 grid gap-2 sm:grid-cols-3">
                 {[
-                  ["Chocolate", "Broad appeal"],
-                  ["Coffee", "For professionals"],
-                  ["Vanilla–Strawberry", "A distinctive option"],
+                  ["Chocolate Crunch", "A rich cocoa bite"],
+                  ["Coffee Mocha", "For coffee lovers"],
+                  ["Kesar Badam", "Saffron and almond"],
                 ].map(([flavour, position]) => (
                   <div key={flavour} className="rounded-[18px] bg-white/45 p-4">
                     <p className="text-sm font-semibold">{flavour}</p>
@@ -1294,41 +1309,32 @@ export default function App() {
                 Join early access <Icon name="arrow" className="size-4" />
               </button>
             </div>
-            <div className="grid min-h-[480px] grid-cols-2 gap-2 bg-[#cbd5c4] p-3 sm:gap-3 sm:p-4 lg:min-h-full">
-              <figure className="group relative col-span-2 min-h-64 overflow-hidden rounded-[24px]">
-                <img
-                  src={proteinMockup}
-                  alt="AAHAR plant protein sachets in chocolate, coffee and vanilla strawberry"
-                  className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.01]"
-                />
-                <figcaption className="light-overlay absolute bottom-3 left-3 rounded-full px-3.5 py-2 text-xs font-semibold">
-                  Pre-launch direction
-                </figcaption>
-              </figure>
-              <figure className="group relative min-h-52 overflow-hidden rounded-[24px]">
-                <img
-                  src={proteinCoffee}
-                  alt="Coffee plant protein shake inspiration"
-                  className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.01]"
-                />
-                <figcaption className="light-overlay absolute bottom-3 left-3 rounded-full px-3 py-2 text-xs font-semibold">
-                  Coffee
-                </figcaption>
-              </figure>
-              <figure className="group relative min-h-52 overflow-hidden rounded-[24px]">
-                <img
-                  src={proteinStrawberry}
-                  alt="Strawberry vanilla smoothie inspiration"
-                  className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.01]"
-                />
-                <figcaption className="light-overlay absolute bottom-3 left-3 rounded-full px-3 py-2 text-xs font-semibold">
-                  Vanilla–Strawberry
-                </figcaption>
-              </figure>
-              <p className="col-span-2 px-2 pb-1 text-[11px] leading-5 text-[#44543f]">
-                Early AAHAR packaging concept for flavour and format exploration. Final packaging
-                and formulation are in development.
-              </p>
+            <div className="grid min-h-[480px] grid-cols-3 grid-rows-4 gap-2.5 bg-[#cbd5c4] p-3 sm:gap-3 sm:p-4 lg:min-h-full">
+              {[...proteinBars, ...proteinPowders].map(({ flavor, src }, index) => {
+                const isBar = index < proteinBars.length;
+                const isFeatured = index === 0 || index === proteinBars.length;
+
+                return (
+                  <figure
+                    key={`${isBar ? "bar" : "powder"}-${flavor}`}
+                    className={`group relative min-h-0 min-w-0 overflow-hidden rounded-[20px] ${
+                      isFeatured ? "col-span-2 row-span-2" : ""
+                    } ${isBar ? "bg-[#ddc2a3]" : "bg-[#b99a79]"}`}
+                  >
+                    <img
+                      src={src}
+                      alt={`AAHAR ${flavor} ${isBar ? "ragi protein bar" : "protein powder"}`}
+                      className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+                      loading="lazy"
+                    />
+                    {isFeatured && (
+                      <figcaption className="absolute left-2 top-2 rounded-full bg-[#e8eddf]/90 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[.12em] text-[#44543f] sm:left-3 sm:top-3">
+                        {isBar ? "Ragi protein bars" : "Protein powders"}
+                      </figcaption>
+                    )}
+                  </figure>
+                );
+              })}
             </div>
           </div>
         </section>
