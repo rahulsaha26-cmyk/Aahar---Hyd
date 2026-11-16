@@ -402,6 +402,18 @@ type SelectedDish = {
   category: string;
 };
 
+type CartItem = {
+  key: string;
+  name: string;
+  price: number;
+  image?: string;
+  calories?: string;
+  protein?: string;
+  quantity: number;
+  details: string;
+  isPlan?: boolean;
+};
+
 const plans = [
   { name: "5-meal plan", price: "₹599", benefit: "₹120 per meal", note: "Flexible weekly pack" },
   {
@@ -425,12 +437,88 @@ const plans = [
   },
 ];
 
+type SurveyAnswer = {
+  routine: string;
+  concern: string;
+  requirements: string[];
+  dietary: string;
+};
+
+const surveySteps = [
+  {
+    key: "routine" as const,
+    label: "Your routine",
+    title: "Who are we planning meals for?",
+    options: ["Student schedule", "Corporate workday", "Mixed routine"],
+  },
+  {
+    key: "concern" as const,
+    label: "Your concern",
+    title: "What does your current food routine feel like?",
+    options: [
+      "I often skip meals or under-eat",
+      "I overconsume fried or sugary food",
+      "I need a more balanced routine",
+      "I train and need more protein",
+    ],
+  },
+  {
+    key: "requirements" as const,
+    label: "Nutrition priorities",
+    title: "Which nutrients or outcomes should we prioritise?",
+    options: [
+      "Protein",
+      "Vitamin B foods",
+      "Iron-rich foods",
+      "Omega-6 sources",
+      "Calcium + Vitamin D",
+      "Steady energy",
+      "Lighter portions",
+    ],
+  },
+  {
+    key: "dietary" as const,
+    label: "Dietary needs",
+    title: "Anything we should avoid or account for?",
+    options: ["No restrictions", "Vegetarian", "Avoid dairy", "Avoid nuts"],
+  },
+];
+
 export default function App() {
+  const [view, setView] = useState<
+    "home" | "survey" | "recommendations" | "cart" | "checkout" | "done"
+  >("home");
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeMenu, setActiveMenu] = useState(0);
   const [menuType, setMenuType] = useState<"veg" | "nonveg">("veg");
   const [selectedDish, setSelectedDish] = useState<SelectedDish | null>(null);
+  const [selectedDishOrigin, setSelectedDishOrigin] = useState<"home" | "recommendations">(
+    "home",
+  );
+  const [portion, setPortion] = useState<"Regular" | "Large">("Regular");
+  const [extraProtein, setExtraProtein] = useState(false);
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    try {
+      const saved = localStorage.getItem("aahar-cart");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [customer, setCustomer] = useState({ name: "", phone: "", address: "" });
+  const [checkoutError, setCheckoutError] = useState("");
+  const [orderNumber, setOrderNumber] = useState("");
   const [toast, setToast] = useState("");
+  const [surveyStep, setSurveyStep] = useState(0);
+  const [surveyAnswers, setSurveyAnswers] = useState<SurveyAnswer>({
+    routine: "",
+    concern: "",
+    requirements: [],
+    dietary: "",
+  });
+  const [recommendedMeals, setRecommendedMeals] = useState<
+    (SelectedDish & { slot: string; reason: string })[]
+  >([]);
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem("aahar-theme");
     return saved ? saved === "dark" : true;
@@ -440,6 +528,10 @@ export default function App() {
     document.documentElement.classList.toggle("dark", darkMode);
     localStorage.setItem("aahar-theme", darkMode ? "dark" : "light");
   }, [darkMode]);
+
+  useEffect(() => {
+    localStorage.setItem("aahar-cart", JSON.stringify(cart));
+  }, [cart]);
 
   useEffect(() => {
     const elements = document.querySelectorAll<HTMLElement>("[data-reveal]");
@@ -463,7 +555,7 @@ export default function App() {
     if (!selectedDish) return;
 
     const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setSelectedDish(null);
+      if (event.key === "Escape") closeDishDetails();
     };
 
     document.addEventListener("keydown", closeOnEscape);
@@ -480,21 +572,197 @@ export default function App() {
     window.setTimeout(() => setToast(""), 2600);
   };
 
+  const closeDishDetails = () => {
+    setSelectedDish(null);
+    if (selectedDishOrigin === "recommendations") {
+      setView("recommendations");
+    }
+  };
+
   const scrollTo = (id: string) => {
+    setView("home");
     setMenuOpen(false);
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+    window.setTimeout(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+    }, 0);
   };
 
   const activeCategories = menuType === "veg" ? menuCategories : nonVegMenuCategories;
+  const cartSubtotal = cart.reduce((total, item) => total + item.price * item.quantity, 0);
+  const hasPlan = cart.some((item) => item.isPlan);
+  const deliveryFee = cart.length && !hasPlan && cartSubtotal < 299 ? 30 : 0;
+  const cartTotal = cartSubtotal + deliveryFee;
+
+  const addMealToCart = (
+    dish: SelectedDish,
+    selectedPortion: "Regular" | "Large" = "Regular",
+    includeExtraProtein = false,
+  ) => {
+    const basePrice = Number(dish.price.replace(/[^\d]/g, ""));
+    const price =
+      basePrice + (selectedPortion === "Large" ? 30 : 0) + (includeExtraProtein ? 30 : 0);
+    const details = [
+      selectedPortion,
+      includeExtraProtein ? "Extra protein" : "",
+    ]
+      .filter(Boolean)
+      .join(" · ");
+    const key = `${dish.name}-${details}`;
+    setCart((items) => {
+      const existing = items.find((item) => item.key === key);
+      if (existing) {
+        return items.map((item) =>
+          item.key === key ? { ...item, quantity: item.quantity + 1 } : item,
+        );
+      }
+      return [
+        ...items,
+        {
+          key,
+          name: dish.name,
+          price,
+          image: dish.image,
+          calories: dish.calories,
+          protein: dish.protein,
+          quantity: 1,
+          details,
+        },
+      ];
+    });
+    notify(`${dish.name} added to your cart`);
+  };
+
+  const addDishToCart = () => {
+    if (!selectedDish) return;
+    addMealToCart(selectedDish, portion, extraProtein);
+    setSelectedDish(null);
+    setPortion("Regular");
+    setExtraProtein(false);
+    if (selectedDishOrigin === "recommendations") {
+      setView("recommendations");
+    }
+  };
+
+  const addPlanToCart = (plan: (typeof plans)[number]) => {
+    const price = Number(plan.price.replace(/[^\d]/g, ""));
+    setCart((items) => [
+      ...items.filter((item) => !item.isPlan),
+      {
+        key: `plan-${plan.name}`,
+        name: plan.name,
+        price,
+        quantity: 1,
+        details: plan.note,
+        isPlan: true,
+      },
+    ]);
+    setView("cart");
+    notify(`${plan.name} added to your cart`);
+  };
+
+  const updateQuantity = (key: string, delta: number) => {
+    setCart((items) =>
+      items
+        .map((item) => (item.key === key ? { ...item, quantity: item.quantity + delta } : item))
+        .filter((item) => item.quantity > 0),
+    );
+  };
+
+  const submitOrder = () => {
+    if (!customer.name.trim() || customer.phone.trim().length < 8 || !customer.address.trim()) {
+      setCheckoutError("Please enter your name, a valid phone number, and delivery address.");
+      return;
+    }
+    setCheckoutError("");
+    setOrderNumber(`AH${Math.floor(1000 + Math.random() * 9000)}`);
+    setCart([]);
+    setView("done");
+  };
+
+  const startSurvey = () => {
+    setSurveyStep(0);
+    setSurveyAnswers({ routine: "", concern: "", requirements: [], dietary: "" });
+    setView("survey");
+  };
+
+  const finishSurvey = () => {
+    const ironFocused = surveyAnswers.requirements.includes("Iron-rich foods");
+    const vitaminBFocused = surveyAnswers.requirements.includes("Vitamin B foods");
+    const omega6Focused = surveyAnswers.requirements.includes("Omega-6 sources");
+    const calciumFocused = surveyAnswers.requirements.includes("Calcium + Vitamin D");
+    const proteinFocused =
+      surveyAnswers.requirements.includes("Protein") ||
+      surveyAnswers.concern === "I train and need more protein";
+    const lighter = surveyAnswers.requirements.includes("Lighter portions");
+    const categories =
+      surveyAnswers.dietary === "No restrictions" && proteinFocused
+        ? nonVegMenuCategories
+        : menuCategories;
+    const lunchCategory = proteinFocused ? categories[1] : categories[0];
+    const snackCategory = categories[2];
+    const dinnerCategory = lighter ? categories[2] : categories[0];
+    const lunchItem = ironFocused
+      ? menuCategories[0].items[2]
+      : proteinFocused
+        ? lunchCategory.items[2]
+        : lunchCategory.items[0];
+    const snackItem = vitaminBFocused
+      ? menuCategories[2].items[3]
+      : omega6Focused
+        ? menuCategories[2].items[1]
+        : snackCategory.items[0];
+    const dinnerItem = calciumFocused ? menuCategories[1].items[2] : dinnerCategory.items[1];
+    const meals = [
+      {
+        ...lunchItem,
+        alt: lunchItem.name,
+        category: ironFocused ? menuCategories[0].title : lunchCategory.title,
+        slot: "Lunch",
+        reason: ironFocused
+          ? "A lentil-and-greens inspired midday meal"
+          : proteinFocused
+            ? "A protein-forward midday meal"
+            : "A balanced everyday thali",
+      },
+      {
+        ...snackItem,
+        alt: snackItem.name,
+        category: menuCategories[2].title,
+        slot: "Snack",
+        reason: vitaminBFocused
+          ? "A millet-based snack for a more nourishing break"
+          : omega6Focused
+            ? "A seed-and-nut inspired snack option"
+            : "A lighter pick to bridge your work or class day",
+      },
+      {
+        ...dinnerItem,
+        alt: dinnerItem.name,
+        category: calciumFocused ? menuCategories[1].title : dinnerCategory.title,
+        slot: "Dinner",
+        reason: calciumFocused
+          ? "A tofu-forward evening meal"
+          : lighter
+            ? "A lighter evening option"
+            : "A satisfying end-of-day meal",
+      },
+    ];
+    setRecommendedMeals(meals);
+    setView("recommendations");
+  };
 
   return (
     <div className="min-h-screen bg-[#dce7eb] text-[#101313] transition-colors duration-300 dark:bg-[#0d292c] dark:text-[#eef7f4]">
       <header className="sticky top-0 z-40 border-b border-black/5 bg-[#dce7eb]/90 backdrop-blur-xl dark:border-[#9cc3bc]/15 dark:bg-[#0d292c]/90">
         <nav className="page-shell flex h-[76px] items-center justify-between">
-          <a href="#" className="flex items-center gap-2.5" aria-label="AAHAR home">
+          <button
+            onClick={() => setView("home")}
+            className="flex items-center gap-2.5"
+            aria-label="AAHAR home"
+          >
             <LogoMark />
             <span className="text-lg font-bold tracking-[0.08em]">AAHAR</span>
-          </a>
+          </button>
 
           <div className="hidden items-center gap-8 text-sm font-semibold md:flex">
             <button onClick={() => scrollTo("meals")} className="nav-link">
@@ -505,6 +773,9 @@ export default function App() {
             </button>
             <button onClick={() => scrollTo("plans")} className="nav-link">
               Plans
+            </button>
+            <button onClick={startSurvey} className="nav-link">
+              Find my meals
             </button>
             <button onClick={() => scrollTo("protein")} className="nav-link">
               Plant protein
@@ -522,6 +793,18 @@ export default function App() {
             </button>
             <button onClick={() => scrollTo("plans")} className="primary-button hidden md:flex">
               Start your plan <Icon name="arrow" className="size-4" />
+            </button>
+            <button
+              onClick={() => setView("cart")}
+              className="icon-button relative"
+              aria-label={`Open cart${cart.length ? `, ${cart.length} item${cart.length === 1 ? "" : "s"}` : ""}`}
+            >
+              <Icon name="box" className="size-4.5" />
+              {cart.length > 0 && (
+                <span className="absolute -right-1 -top-1 grid size-5 place-items-center rounded-full bg-[#a85f4f] text-[10px] font-bold text-white">
+                  {cart.reduce((total, item) => total + item.quantity, 0)}
+                </span>
+              )}
             </button>
 
             <button
@@ -542,11 +825,12 @@ export default function App() {
                 ["Meals", "meals"],
                 ["How it works", "how-it-works"],
                 ["Plans", "plans"],
+                ["Find my meals", "survey"],
                 ["Plant protein", "protein"],
               ].map(([label, id]) => (
                 <button
                   key={id}
-                  onClick={() => scrollTo(id)}
+                  onClick={() => (id === "survey" ? startSurvey() : scrollTo(id))}
                   className="block w-full rounded-2xl px-4 py-3 text-left text-sm font-semibold hover:bg-[#eef3f4] dark:hover:bg-white/5"
                 >
                   {label}
@@ -557,7 +841,7 @@ export default function App() {
         )}
       </header>
 
-      <main>
+      <main className={view === "home" ? "" : "hidden"}>
         <section className="page-shell grid min-h-[calc(100svh-76px)] items-center gap-12 py-12 md:py-16 lg:grid-cols-[.92fr_1.08fr] lg:gap-16 lg:py-20">
           <div className="hero-copy max-w-xl">
             <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-white/70 px-4 py-2 text-xs font-semibold shadow-sm dark:bg-white/8">
@@ -597,6 +881,12 @@ export default function App() {
                 </span>
               ))}
             </div>
+            <button
+              onClick={startSurvey}
+              className="mt-7 text-sm font-semibold text-[#688456] underline decoration-[#688456]/30 underline-offset-4 hover:decoration-[#688456]"
+            >
+              Not sure what to choose? Take the 30-second meal finder →
+            </button>
           </div>
 
           <div className="hero-visual relative mx-auto w-full max-w-[620px]">
@@ -753,14 +1043,15 @@ export default function App() {
                       {category.items.map((item) => (
                         <button
                           key={item.name}
-                          onClick={() =>
+                          onClick={() => {
+                            setSelectedDishOrigin("home");
                             setSelectedDish({
                               ...item,
                               image: item.image,
                               alt: item.name,
                               category: category.title,
-                            })
-                          }
+                            });
+                          }}
                           className="dish-button flex min-h-32 flex-col rounded-[20px] bg-[#eef3f4] p-5 text-left dark:bg-[#1a3d40]"
                           aria-label={`View ${item.name}, ${item.price}`}
                         >
@@ -923,7 +1214,7 @@ export default function App() {
                     {plan.note}
                   </p>
                   <button
-                    onClick={() => notify(`${plan.name} selected — ordering opens soon`)}
+                    onClick={() => addPlanToCart(plan)}
                     className={`mt-5 flex w-full items-center justify-center rounded-full px-4 py-3 text-sm font-semibold ${
                       plan.popular
                         ? "bg-white text-[#31412d]"
@@ -1052,6 +1343,408 @@ export default function App() {
         </section>
       </main>
 
+      {view === "survey" && (
+        <main className="page-shell py-12 sm:py-20">
+          <div className="mx-auto max-w-2xl">
+            <p className="section-label">Personal meal finder</p>
+            <h1 className="section-title">Let’s build your workday meal plan.</h1>
+            <p className="mt-4 text-sm leading-6 text-[#66757a] dark:text-[#a8bfba]">
+              Tell us about your routine, nutrition concerns, and dietary requirements. We’ll
+              suggest lunch, a snack, and dinner for a typical Hyderabad work or college day.
+            </p>
+
+            <div className="mt-8 flex items-center gap-2" aria-label="Survey progress">
+              {surveySteps.map((step, index) => (
+                <div key={step.key} className="flex flex-1 items-center gap-2">
+                  <span
+                    className={`grid size-8 shrink-0 place-items-center rounded-full text-xs font-bold ${
+                      index <= surveyStep
+                        ? "bg-[#688456] text-white"
+                        : "bg-white/60 text-[#66757a] dark:bg-[#17383b] dark:text-[#a8bfba]"
+                    }`}
+                  >
+                    {index + 1}
+                  </span>
+                  {index < surveySteps.length - 1 && (
+                    <span className="h-px flex-1 bg-black/10 dark:bg-white/10" />
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6 rounded-[30px] bg-white/60 p-6 dark:bg-[#123235] sm:p-10">
+              <p className="section-label">{surveySteps[surveyStep].label}</p>
+              <h2 className="text-3xl font-semibold tracking-[-.04em]">
+                {surveySteps[surveyStep].title}
+              </h2>
+              {surveySteps[surveyStep].key === "requirements" && (
+                <p className="mt-3 text-sm text-[#66757a] dark:text-[#a8bfba]">
+                  Select all that you want your demo plan to focus on. These are nutrition
+                  priorities, not a medical deficiency diagnosis.
+                </p>
+              )}
+              <div className="mt-7 grid gap-3">
+                {surveySteps[surveyStep].options.map((option) => {
+                  const key = surveySteps[surveyStep].key;
+                  const answer = surveyAnswers[key];
+                  const selected = Array.isArray(answer) ? answer.includes(option) : answer === option;
+                  return (
+                    <button
+                      key={option}
+                      onClick={() =>
+                        key === "requirements"
+                          ? setSurveyAnswers({
+                              ...surveyAnswers,
+                              requirements: selected
+                                ? surveyAnswers.requirements.filter((item) => item !== option)
+                                : [...surveyAnswers.requirements, option],
+                            })
+                          : setSurveyAnswers({ ...surveyAnswers, [key]: option })
+                      }
+                      aria-pressed={selected}
+                      className={`flex items-center justify-between rounded-[18px] border p-4 text-left text-sm font-semibold transition-colors ${
+                        selected
+                          ? "border-[#688456] bg-[#dfe9d4] text-[#45583c] dark:bg-[#294b41] dark:text-[#c6ddbb]"
+                          : "border-black/5 bg-[#eef3f4] dark:border-white/10 dark:bg-[#1a3d40]"
+                      }`}
+                    >
+                      {option}
+                      {selected && <Icon name="check" className="size-4" />}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                {surveyStep > 0 && (
+                  <button
+                    onClick={() => setSurveyStep((step) => step - 1)}
+                    className="secondary-button justify-center px-5 py-3"
+                  >
+                    Back
+                  </button>
+                )}
+                <button
+                  disabled={
+                    Array.isArray(surveyAnswers[surveySteps[surveyStep].key])
+                      ? surveyAnswers[surveySteps[surveyStep].key].length === 0
+                      : !surveyAnswers[surveySteps[surveyStep].key]
+                  }
+                  onClick={() =>
+                    surveyStep === surveySteps.length - 1
+                      ? finishSurvey()
+                      : setSurveyStep((step) => step + 1)
+                  }
+                  className="primary-button flex-1 justify-center disabled:cursor-not-allowed disabled:opacity-45"
+                >
+                  {surveyStep === surveySteps.length - 1 ? "Show my meals" : "Next"}
+                  <Icon name="arrow" className="size-4" />
+                </button>
+              </div>
+            </div>
+            <button
+              onClick={() => setView("home")}
+              className="mx-auto mt-5 block text-sm font-semibold text-[#688456]"
+            >
+              Skip for now
+            </button>
+          </div>
+        </main>
+      )}
+
+      {view === "recommendations" && (
+        <main className="page-shell py-12 sm:py-20">
+          <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+            <div>
+              <p className="section-label">Your AAHAR picks</p>
+              <h1 className="section-title">Your workday meal plan.</h1>
+              <p className="mt-4 max-w-xl text-sm leading-6 text-[#66757a] dark:text-[#a8bfba]">
+                Designed for a {surveyAnswers.routine.toLowerCase()} with a focus on{" "}
+                <span className="font-semibold text-[#688456]">
+                  {surveyAnswers.requirements.join(", ").toLowerCase()}
+                </span>
+                . Tap a meal to review portions and add it to your cart.
+              </p>
+            </div>
+            <button onClick={startSurvey} className="secondary-button justify-center px-4 py-3">
+              Retake survey
+            </button>
+          </div>
+          <div className="mt-6 rounded-[22px] border border-[#688456]/20 bg-[#dfe9d4]/70 p-4 text-sm text-[#45583c] dark:bg-[#294b41] dark:text-[#c6ddbb]">
+            <p className="font-semibold">Your plan focus</p>
+            <p className="mt-1">
+              {surveyAnswers.concern} · {surveyAnswers.dietary}
+            </p>
+            <p className="mt-2 text-xs leading-5 opacity-80">
+              This is a demo meal-planning guide based on your self-reported preferences, not a
+              medical diagnosis or treatment for a deficiency. Consult a qualified professional
+              for medical nutrition advice.
+            </p>
+          </div>
+          <div className="mt-8 grid gap-4 md:grid-cols-3">
+            {recommendedMeals.map((meal) => (
+              <article
+                key={meal.name}
+                className="overflow-hidden rounded-[26px] bg-white/60 dark:bg-[#153639]"
+              >
+                <img
+                  src={meal.image}
+                  alt={meal.alt}
+                  className="h-48 w-full object-cover"
+                  loading="lazy"
+                />
+                <div className="p-5">
+                  <p className="text-base font-bold uppercase tracking-[.14em] text-[#688456]">
+                    {meal.slot}
+                  </p>
+                  <p className="text-xs font-semibold uppercase tracking-[.12em] text-[#688456]">
+                    {meal.category}
+                  </p>
+                  <h2 className="mt-2 text-xl font-semibold tracking-[-.03em]">{meal.name}</h2>
+                  <p className="mt-2 text-sm leading-6 text-[#66757a] dark:text-[#b2c9c5]">
+                    {meal.reason}
+                  </p>
+                  <div className="mt-4 flex gap-2 text-xs font-semibold text-[#66757a] dark:text-[#b2c9c5]">
+                    <span className="rounded-full bg-[#eef3f4] px-3 py-1.5 dark:bg-white/8">
+                      {meal.calories}
+                    </span>
+                    <span className="rounded-full bg-[#dfe9d4] px-3 py-1.5 text-[#45583c] dark:bg-[#294b41] dark:text-[#c6ddbb]">
+                      {meal.protein} protein
+                    </span>
+                  </div>
+                  <div className="mt-5 flex items-center justify-between gap-3">
+                    <span className="text-lg font-bold text-[#688456] dark:text-[#a9c792]">
+                      {meal.price}
+                    </span>
+                    <button
+                      onClick={() => {
+                        setSelectedDishOrigin("recommendations");
+                        setSelectedDish(meal);
+                        setPortion("Regular");
+                        setExtraProtein(false);
+                      }}
+                      className="primary-button px-4 py-2.5"
+                    >
+                      Add meal <Icon name="arrow" className="size-4" />
+                    </button>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+          <button
+            onClick={() => setView("home")}
+            className="secondary-button mx-auto mt-8 px-5 py-3"
+          >
+            Browse full menu
+          </button>
+        </main>
+      )}
+
+      {view === "cart" && (
+        <main className="page-shell py-12 sm:py-20">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="section-label">Your order</p>
+              <h1 className="section-title">Build your meal box.</h1>
+            </div>
+            <button onClick={() => setView("home")} className="secondary-button px-4 py-3">
+              Continue browsing
+            </button>
+          </div>
+
+          {cart.length === 0 ? (
+            <div className="mt-8 rounded-[30px] bg-white/60 p-8 text-center dark:bg-[#123235] sm:p-14">
+              <p className="text-xl font-semibold">Your cart is waiting for something good.</p>
+              <p className="mt-2 text-sm text-[#66757a] dark:text-[#a8bfba]">
+                Add a meal or choose a plan to get started.
+              </p>
+              <button onClick={() => scrollTo("meals")} className="primary-button mt-6">
+                Browse meals <Icon name="arrow" className="size-4" />
+              </button>
+            </div>
+          ) : (
+            <div className="mt-8 grid gap-5 lg:grid-cols-[1.2fr_.8fr]">
+              <div className="rounded-[30px] bg-white/60 p-4 dark:bg-[#123235] sm:p-6">
+                <div className="grid gap-3">
+                  {cart.map((item) => (
+                    <div
+                      key={item.key}
+                      className="flex items-center gap-3 rounded-[20px] bg-[#eef3f4] p-3 dark:bg-[#1a3d40]"
+                    >
+                      {item.image ? (
+                        <img
+                          src={item.image}
+                          alt=""
+                          className="size-16 shrink-0 rounded-[15px] object-cover"
+                        />
+                      ) : (
+                        <div className="grid size-16 shrink-0 place-items-center rounded-[15px] bg-[#dfe9d4] text-[#45583c]">
+                          <Icon name="box" className="size-6" />
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold">{item.name}</p>
+                        <p className="text-xs text-[#66757a] dark:text-[#a8bfba]">{item.details}</p>
+                        <p className="mt-1 text-sm font-bold text-[#688456] dark:text-[#a9c792]">
+                          ₹{item.price.toLocaleString("en-IN")}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => updateQuantity(item.key, -1)}
+                          className="icon-button size-9"
+                          aria-label={`Decrease ${item.name} quantity`}
+                        >
+                          −
+                        </button>
+                        <span className="w-5 text-center text-sm font-semibold">
+                          {item.quantity}
+                        </span>
+                        <button
+                          onClick={() => updateQuantity(item.key, 1)}
+                          className="icon-button size-9"
+                          aria-label={`Increase ${item.name} quantity`}
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <aside className="h-fit rounded-[26px] bg-[#163b3d] p-6 text-white">
+                <p className="text-lg font-semibold">Order summary</p>
+                <div className="mt-6 grid gap-3 text-sm">
+                  <div className="flex justify-between gap-4 text-white/70">
+                    <span>Subtotal</span>
+                    <span>₹{cartSubtotal.toLocaleString("en-IN")}</span>
+                  </div>
+                  <div className="flex justify-between gap-4 text-white/70">
+                    <span>Delivery</span>
+                    <span>{deliveryFee ? `₹${deliveryFee}` : "Free"}</span>
+                  </div>
+                  <div className="flex justify-between gap-4 border-t border-white/15 pt-4 text-lg font-semibold">
+                    <span>Total</span>
+                    <span>₹{cartTotal.toLocaleString("en-IN")}</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setView("checkout")}
+                  className="mt-7 flex w-full items-center justify-center rounded-full bg-white px-4 py-3.5 text-sm font-semibold text-[#163b3d] hover:bg-[#edf1f2]"
+                >
+                  Continue to checkout <Icon name="arrow" className="ml-2 size-4" />
+                </button>
+                <p className="mt-3 text-center text-xs text-white/55">
+                  Free delivery on orders of ₹299 or more.
+                </p>
+              </aside>
+            </div>
+          )}
+        </main>
+      )}
+
+      {view === "checkout" && (
+        <main className="page-shell py-12 sm:py-20">
+          <div className="max-w-2xl">
+            <p className="section-label">Checkout</p>
+            <h1 className="section-title">Where should we deliver?</h1>
+            <p className="mt-4 text-sm leading-6 text-[#66757a] dark:text-[#a8bfba]">
+              We’ll use these details for this order only. Payment opens at launch.
+            </p>
+          </div>
+          <div className="mt-8 grid gap-5 lg:grid-cols-[1fr_.7fr]">
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                submitOrder();
+              }}
+              className="rounded-[30px] bg-white/60 p-6 dark:bg-[#123235] sm:p-8"
+            >
+              <label htmlFor="customer-name">Name</label>
+              <input
+                id="customer-name"
+                value={customer.name}
+                onChange={(event) => setCustomer({ ...customer, name: event.target.value })}
+                placeholder="Your full name"
+              />
+              <label htmlFor="customer-phone">Phone number</label>
+              <input
+                id="customer-phone"
+                inputMode="tel"
+                value={customer.phone}
+                onChange={(event) => setCustomer({ ...customer, phone: event.target.value })}
+                placeholder="10-digit phone number"
+              />
+              <label htmlFor="customer-address">Delivery address</label>
+              <textarea
+                id="customer-address"
+                rows={4}
+                value={customer.address}
+                onChange={(event) => setCustomer({ ...customer, address: event.target.value })}
+                placeholder="Home, office or campus address in Hyderabad"
+              />
+              {checkoutError && (
+                <p role="alert" className="mt-4 text-sm font-semibold text-[#a85f4f]">
+                  {checkoutError}
+                </p>
+              )}
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={() => setView("cart")}
+                  className="secondary-button justify-center px-5 py-3"
+                >
+                  Back to cart
+                </button>
+                <button type="submit" className="primary-button justify-center px-5 py-3">
+                  Place order <Icon name="arrow" className="size-4" />
+                </button>
+              </div>
+            </form>
+            <div className="h-fit rounded-[26px] bg-[#163b3d] p-6 text-white">
+              <p className="font-semibold">You’re ordering</p>
+              <div className="mt-4 grid gap-3 text-sm text-white/75">
+                {cart.map((item) => (
+                  <div key={item.key} className="flex justify-between gap-4">
+                    <span>
+                      {item.quantity} × {item.name}
+                    </span>
+                    <span>₹{(item.price * item.quantity).toLocaleString("en-IN")}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-5 flex justify-between border-t border-white/15 pt-4 font-semibold">
+                <span>Total</span>
+                <span>₹{cartTotal.toLocaleString("en-IN")}</span>
+              </div>
+            </div>
+          </div>
+        </main>
+      )}
+
+      {view === "done" && (
+        <main className="page-shell py-20 sm:py-28">
+          <div className="mx-auto max-w-xl rounded-[34px] bg-white/60 p-8 text-center dark:bg-[#123235] sm:p-14">
+            <div className="mx-auto grid size-16 place-items-center rounded-full bg-[#dfe9d4] text-[#45583c] dark:bg-[#294b41] dark:text-[#c6ddbb]">
+              <Icon name="check" className="size-7" />
+            </div>
+            <p className="section-label mt-6">Order received</p>
+            <h1 className="section-title mx-auto">Your everyday lunch is sorted.</h1>
+            <p className="mt-5 text-sm leading-6 text-[#66757a] dark:text-[#a8bfba]">
+              Thanks, {customer.name || "there"}. We’ve saved your request and will contact you at{" "}
+              {customer.phone || "your phone number"} with the next steps.
+            </p>
+            <p className="mt-5 rounded-full bg-[#eef3f4] px-4 py-3 text-sm font-semibold dark:bg-[#1a3d40]">
+              Order number: {orderNumber}
+            </p>
+            <button onClick={() => setView("home")} className="primary-button mt-7">
+              Back to AAHAR <Icon name="arrow" className="size-4" />
+            </button>
+          </div>
+        </main>
+      )}
+
       <footer className="page-shell flex flex-col gap-5 border-t border-black/10 py-8 text-sm text-[#5b6a6f] dark:border-[#9cc3bc]/15 dark:text-[#b2c9c5] sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2 font-bold text-[#111] dark:text-white">
           <LogoMark className="size-16" />
@@ -1068,7 +1761,7 @@ export default function App() {
           aria-modal="true"
           aria-labelledby="dish-title"
           onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setSelectedDish(null);
+            if (event.target === event.currentTarget) closeDishDetails();
           }}
         >
           <div className="modal-enter w-full max-w-2xl overflow-hidden rounded-[30px] bg-[#edf3f2] text-[#101313] shadow-[0_30px_100px_rgba(0,0,0,.35)] dark:bg-[#153639] dark:text-[#eef7f4]">
@@ -1096,7 +1789,7 @@ export default function App() {
                     </h2>
                   </div>
                   <button
-                    onClick={() => setSelectedDish(null)}
+                    onClick={closeDishDetails}
                     className="icon-button shrink-0"
                     aria-label="Close dish details"
                   >
@@ -1119,14 +1812,44 @@ export default function App() {
                 <p className="mt-5 text-sm leading-6 text-[#66757a] dark:text-[#a8bfba]">
                   Standardized portions, transparent nutrition and fresh daily preparation.
                 </p>
+                <div className="mt-6 grid gap-2">
+                  <p className="text-xs font-semibold uppercase tracking-[.12em] text-[#688456]">
+                    Customize your meal
+                  </p>
+                  <div className="flex gap-2">
+                    {(["Regular", "Large"] as const).map((size) => (
+                      <button
+                        key={size}
+                        onClick={() => setPortion(size)}
+                        aria-pressed={portion === size}
+                        className={`flex-1 rounded-full px-3 py-2 text-sm font-semibold ${
+                          portion === size
+                            ? "bg-[#688456] text-white"
+                            : "bg-black/5 dark:bg-white/10"
+                        }`}
+                      >
+                        {size}
+                        {size === "Large" && " +₹30"}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => setExtraProtein((enabled) => !enabled)}
+                    aria-pressed={extraProtein}
+                    className={`rounded-full px-3 py-2 text-left text-sm font-semibold ${
+                      extraProtein
+                        ? "bg-[#dfe9d4] text-[#45583c] dark:bg-[#294b41] dark:text-[#c6ddbb]"
+                        : "bg-black/5 dark:bg-white/10"
+                    }`}
+                  >
+                    {extraProtein ? "✓ " : ""}Extra protein +₹30
+                  </button>
+                </div>
                 <button
-                  onClick={() => {
-                    setSelectedDish(null);
-                    notify(`${selectedDish.name} selected — ordering opens soon`);
-                  }}
+                  onClick={addDishToCart}
                   className="primary-button mt-auto justify-center py-3.5 sm:mt-8"
                 >
-                  Choose this dish <Icon name="arrow" className="size-4" />
+                  Add to cart <Icon name="arrow" className="size-4" />
                 </button>
               </div>
             </div>

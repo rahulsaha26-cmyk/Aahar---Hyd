@@ -21,6 +21,57 @@
     cursor: pointer;
   }
 
+  label {
+    display: block;
+    margin: 0.9rem 0 0.4rem;
+    color: #536267;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  input,
+  select,
+  textarea {
+    display: block;
+    width: 100%;
+    border: 1px solid rgb(16 19 19 / 12%);
+    border-radius: 0.75rem;
+    background: rgb(255 255 255 / 62%);
+    padding: 0.75rem 0.875rem;
+    color: #101313;
+    font: inherit;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: #7a898d;
+  }
+
+  input:focus,
+  select:focus,
+  textarea:focus {
+    border-color: #688456;
+    outline: 3px solid rgb(104 132 86 / 22%);
+    outline-offset: 1px;
+  }
+
+  textarea {
+    min-height: 7rem;
+    resize: vertical;
+  }
+
+  .dark label {
+    color: #b2c9c5;
+  }
+
+  .dark input,
+  .dark select,
+  .dark textarea {
+    border-color: rgb(156 195 188 / 18%);
+    background: rgb(255 255 255 / 7%);
+    color: #eef7f4;
+  }
+
   button:focus-visible,
   a:focus-visible {
     outline: 3px solid #688456;

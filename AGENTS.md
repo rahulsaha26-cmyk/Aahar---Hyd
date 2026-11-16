@@ -2,6 +2,11 @@
 
 React + Vite + Tailwind CSS project running inside Figma Make.
 
+For all new pages and components, follow the AAHAR visual and interaction
+guidance in [Aahar-DESIGN-SYSTEM.md](./Aahar-DESIGN-SYSTEM.md). Treat the
+existing patterns in `src/App.tsx` and `src/index.css` as the implementation
+source of truth.
+
 ## Development Server
 
 A Vite development server is **already running** on `$PORT` (default 8443). You don't need to start it manually.
