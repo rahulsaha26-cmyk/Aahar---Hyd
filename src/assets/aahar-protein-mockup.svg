@@ -1,0 +1,113 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-labelledby="title desc">
+  <title id="title">AAHAR plant protein sachet range</title>
+  <desc id="desc">Three branded AAHAR plant protein sachets in chocolate, coffee and vanilla strawberry flavours.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e9ddd2"/>
+      <stop offset="1" stop-color="#cdb9aa"/>
+    </linearGradient>
+    <linearGradient id="chocolate" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#b9785f"/>
+      <stop offset="1" stop-color="#8e5544"/>
+    </linearGradient>
+    <linearGradient id="coffee" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#d9c58b"/>
+      <stop offset="1" stop-color="#bda66d"/>
+    </linearGradient>
+    <linearGradient id="berry" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#d98a8b"/>
+      <stop offset="1" stop-color="#bd6d72"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="180%">
+      <feDropShadow dx="0" dy="26" stdDeviation="22" flood-color="#5d493d" flood-opacity=".24"/>
+    </filter>
+    <filter id="softShadow" x="-30%" y="-30%" width="160%" height="180%">
+      <feDropShadow dx="0" dy="12" stdDeviation="12" flood-color="#5d493d" flood-opacity=".18"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="900" fill="url(#background)"/>
+  <circle cx="1050" cy="125" r="240" fill="#f3e9e0" opacity=".42"/>
+  <circle cx="90" cy="800" r="280" fill="#bdcbaa" opacity=".3"/>
+  <ellipse cx="600" cy="766" rx="465" ry="55" fill="#6e5749" opacity=".14"/>
+
+  <!-- Chocolate sachet -->
+  <g transform="translate(108 196) rotate(-3 180 260)" filter="url(#shadow)">
+    <path d="M24 22Q24 0 46 0H318Q340 0 340 22L326 517Q325 542 300 546H63Q38 542 37 517Z" fill="url(#chocolate)"/>
+    <rect x="34" y="27" width="296" height="12" rx="6" fill="#674032" opacity=".8"/>
+    <path d="M52 58H312" stroke="#e8c3b4" stroke-width="2" opacity=".45"/>
+    <rect x="58" y="82" width="38" height="38" rx="12" fill="#f5f7ee"/>
+    <path d="M66 112 74 91h5l9 21h-5l-2-5H72l-2 5h-4Z" fill="#688456"/>
+    <path d="M72 104c3-5 7-7 13-6-1 5-5 7-10 7" fill="#bfd0a8"/>
+    <g fill="#fff">
+      <text x="107" y="110" font-family="DM Sans, Arial, sans-serif" font-size="19" font-weight="700" letter-spacing="3">AAHAR</text>
+      <text x="58" y="210" font-family="DM Sans, Arial, sans-serif" font-size="46" font-weight="700">Plant</text>
+      <text x="58" y="258" font-family="DM Sans, Arial, sans-serif" font-size="46" font-weight="700">protein</text>
+      <text x="59" y="290" font-family="DM Sans, Arial, sans-serif" font-size="13" font-weight="600" letter-spacing="2">PEA + RICE PROTEIN</text>
+    </g>
+    <rect x="57" y="340" width="250" height="122" rx="25" fill="#f3e7df" opacity=".94"/>
+    <text x="80" y="383" fill="#603c30" font-family="DM Sans, Arial, sans-serif" font-size="18" font-weight="700">CHOCOLATE</text>
+    <text x="80" y="412" fill="#7d594d" font-family="DM Sans, Arial, sans-serif" font-size="13">Rich · smooth · balanced</text>
+    <g transform="translate(238 374)">
+      <rect width="37" height="37" rx="5" fill="#59352b" transform="rotate(-8)"/>
+      <rect x="24" y="21" width="37" height="37" rx="5" fill="#714435" transform="rotate(8 42 39)"/>
+    </g>
+    <text x="58" y="505" fill="#fff" font-family="DM Sans, Arial, sans-serif" font-size="13" font-weight="700">30g TRIAL SACHET</text>
+  </g>
+
+  <!-- Coffee sachet -->
+  <g transform="translate(419 132)" filter="url(#shadow)">
+    <path d="M24 22Q24 0 46 0H318Q340 0 340 22L326 581Q325 606 300 610H63Q38 606 37 581Z" fill="url(#coffee)"/>
+    <rect x="34" y="27" width="296" height="12" rx="6" fill="#877342" opacity=".75"/>
+    <path d="M52 58H312" stroke="#fff4c9" stroke-width="2" opacity=".5"/>
+    <rect x="58" y="82" width="38" height="38" rx="12" fill="#17383b"/>
+    <path d="M66 112 74 91h5l9 21h-5l-2-5H72l-2 5h-4Z" fill="#f5f7ee"/>
+    <path d="M72 104c3-5 7-7 13-6-1 5-5 7-10 7" fill="#bfd0a8"/>
+    <g fill="#17383b">
+      <text x="107" y="110" font-family="DM Sans, Arial, sans-serif" font-size="19" font-weight="700" letter-spacing="3">AAHAR</text>
+      <text x="58" y="210" font-family="DM Sans, Arial, sans-serif" font-size="46" font-weight="700">Plant</text>
+      <text x="58" y="258" font-family="DM Sans, Arial, sans-serif" font-size="46" font-weight="700">protein</text>
+      <text x="59" y="290" font-family="DM Sans, Arial, sans-serif" font-size="13" font-weight="600" letter-spacing="2">PEA + RICE PROTEIN</text>
+    </g>
+    <rect x="57" y="372" width="250" height="126" rx="25" fill="#f4edda" opacity=".94"/>
+    <text x="80" y="415" fill="#35443b" font-family="DM Sans, Arial, sans-serif" font-size="18" font-weight="700">COFFEE</text>
+    <text x="80" y="444" fill="#677369" font-family="DM Sans, Arial, sans-serif" font-size="13">Deep · roasted · clean</text>
+    <g fill="#6f4b36" transform="translate(245 404)">
+      <ellipse cx="10" cy="9" rx="9" ry="13" transform="rotate(-28 10 9)"/>
+      <ellipse cx="35" cy="23" rx="9" ry="13" transform="rotate(25 35 23)"/>
+      <path d="M5 3c6 5 8 10 9 16M31 14c4 6 6 11 6 18" fill="none" stroke="#d9c49c" stroke-width="2"/>
+    </g>
+    <text x="58" y="563" fill="#17383b" font-family="DM Sans, Arial, sans-serif" font-size="13" font-weight="700">30g TRIAL SACHET</text>
+  </g>
+
+  <!-- Strawberry sachet -->
+  <g transform="translate(752 196) rotate(3 180 260)" filter="url(#shadow)">
+    <path d="M24 22Q24 0 46 0H318Q340 0 340 22L326 517Q325 542 300 546H63Q38 542 37 517Z" fill="url(#berry)"/>
+    <rect x="34" y="27" width="296" height="12" rx="6" fill="#87484d" opacity=".72"/>
+    <path d="M52 58H312" stroke="#ffd5d5" stroke-width="2" opacity=".48"/>
+    <rect x="58" y="82" width="38" height="38" rx="12" fill="#f5f7ee"/>
+    <path d="M66 112 74 91h5l9 21h-5l-2-5H72l-2 5h-4Z" fill="#688456"/>
+    <path d="M72 104c3-5 7-7 13-6-1 5-5 7-10 7" fill="#bfd0a8"/>
+    <g fill="#fff">
+      <text x="107" y="110" font-family="DM Sans, Arial, sans-serif" font-size="19" font-weight="700" letter-spacing="3">AAHAR</text>
+      <text x="58" y="210" font-family="DM Sans, Arial, sans-serif" font-size="46" font-weight="700">Plant</text>
+      <text x="58" y="258" font-family="DM Sans, Arial, sans-serif" font-size="46" font-weight="700">protein</text>
+      <text x="59" y="290" font-family="DM Sans, Arial, sans-serif" font-size="13" font-weight="600" letter-spacing="2">PEA + RICE PROTEIN</text>
+    </g>
+    <rect x="57" y="340" width="250" height="122" rx="25" fill="#f8e5e3" opacity=".96"/>
+    <text x="80" y="380" fill="#7d4147" font-family="DM Sans, Arial, sans-serif" font-size="17" font-weight="700">VANILLA–</text>
+    <text x="80" y="402" fill="#7d4147" font-family="DM Sans, Arial, sans-serif" font-size="17" font-weight="700">STRAWBERRY</text>
+    <text x="80" y="431" fill="#93636a" font-family="DM Sans, Arial, sans-serif" font-size="13">Bright · creamy · fresh</text>
+    <g transform="translate(246 368)">
+      <path d="M26 4c14 0 24 11 22 25-2 16-15 30-25 37C12 58 1 44 1 28 1 14 12 4 26 4Z" fill="#c94f58"/>
+      <path d="M11 10c9-8 21-9 30 0M20 5c2-5 7-8 13-8" fill="none" stroke="#668957" stroke-width="5" stroke-linecap="round"/>
+      <g fill="#f7d9b1"><circle cx="14" cy="26" r="1.5"/><circle cx="27" cy="18" r="1.5"/><circle cx="34" cy="34" r="1.5"/><circle cx="20" cy="43" r="1.5"/></g>
+    </g>
+    <text x="58" y="505" fill="#fff" font-family="DM Sans, Arial, sans-serif" font-size="13" font-weight="700">30g TRIAL SACHET</text>
+  </g>
+
+  <g transform="translate(475 757)" filter="url(#softShadow)">
+    <rect width="250" height="70" rx="35" fill="#f8f3ec"/>
+    <text x="125" y="43" text-anchor="middle" fill="#17383b" font-family="DM Sans, Arial, sans-serif" font-size="17" font-weight="700" letter-spacing="1">PRE-LAUNCH RANGE</text>
+  </g>
+</svg>

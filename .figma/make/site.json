@@ -1,0 +1,10 @@
+{
+  "description": "Order authentic Hyderabad-style healthy meals, subscribe for daily delivery, and discover plant-based protein and evidence-backed wellness products.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
