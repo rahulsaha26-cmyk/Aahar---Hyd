@@ -247,6 +247,11 @@
   box-shadow: 0 3px 12px rgb(21 56 59 / 12%);
 }
 
+.header-brand-logo {
+  object-fit: cover;
+  padding: 0;
+}
+
 .dark .brand-logo {
   border-color: rgb(185 208 199 / 50%);
   box-shadow:

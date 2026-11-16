@@ -106,7 +106,7 @@ function Icon({ name, className = "" }: { name: IconName; className?: string }) 
   );
 }
 
-function LogoMark({ className = "size-14" }: { className?: string }) {
+function LogoMark({ className = "size-16 header-brand-logo" }: { className?: string }) {
   return (
     <img
       src={brandLogo}
