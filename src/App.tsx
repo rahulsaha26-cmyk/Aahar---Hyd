@@ -1383,6 +1383,20 @@ export default function App() {
             <p className="mx-auto mt-4 max-w-lg text-sm leading-6 text-white/60 sm:text-base">
               Flexible meal plans for individuals, teams and campuses in Hyderabad.
             </p>
+            <div className="mx-auto mt-8 flex max-w-3xl flex-wrap justify-center gap-3">
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2.5 text-xs font-semibold text-white/75">
+                <Icon name="leaf" className="size-4 text-[#a9c792]" />
+                Freshly prepared daily
+              </span>
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2.5 text-xs font-semibold text-white/75">
+                <Icon name="check" className="size-4 text-[#a9c792]" />
+                Clear nutrition details
+              </span>
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2.5 text-xs font-semibold text-white/75">
+                <Icon name="clock" className="size-4 text-[#a9c792]" />
+                Flexible meal plans
+              </span>
+            </div>
             <button
               onClick={() => scrollTo("plans")}
               className="primary-button mx-auto mt-8 bg-white text-black hover:bg-[#edf1f2]"
@@ -1820,7 +1834,7 @@ export default function App() {
           AAHAR
         </div>
         <p>Healthy daily dabbas, made in Hyderabad.</p>
-        <p>© 2025 AAHAR Nutrition</p>
+        <p>© 2026 AAHAR Nutrition</p>
       </footer>
 
       {selectedDish && (
