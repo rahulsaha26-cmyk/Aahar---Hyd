@@ -437,6 +437,16 @@ type CartItem = {
   isPlan?: boolean;
 };
 
+const getAdjustedCalories = (
+  calories: string,
+  portion: "Regular" | "Large",
+  extraProtein: boolean,
+) => {
+  const baseCalories = Number.parseInt(calories, 10);
+  const portionCalories = portion === "Large" ? Math.round(baseCalories * 1.25) : baseCalories;
+  return `${portionCalories + (extraProtein ? 100 : 0)} kcal`;
+};
+
 const plans = [
   { name: "5-meal plan", price: "₹599", benefit: "₹120 per meal", note: "Flexible weekly pack" },
   {
@@ -540,7 +550,7 @@ export default function App() {
     dietary: "",
   });
   const [recommendedMeals, setRecommendedMeals] = useState<
-    (SelectedDish & { slot: string; reason: string })[]
+    (SelectedDish & { slot: string; reason: string; focus: string[] })[]
   >([]);
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem("aahar-theme");
@@ -616,6 +626,9 @@ export default function App() {
   const hasPlan = cart.some((item) => item.isPlan);
   const deliveryFee = cart.length && !hasPlan && cartSubtotal < 299 ? 30 : 0;
   const cartTotal = cartSubtotal + deliveryFee;
+  const selectedDishCalories = selectedDish
+    ? getAdjustedCalories(selectedDish.calories, portion, extraProtein)
+    : "";
 
   const addMealToCart = (
     dish: SelectedDish,
@@ -646,7 +659,7 @@ export default function App() {
           name: dish.name,
           price,
           image: dish.image,
-          calories: dish.calories,
+          calories: getAdjustedCalories(dish.calories, selectedPortion, includeExtraProtein),
           protein: dish.protein,
           quantity: 1,
           details,
@@ -742,6 +755,11 @@ export default function App() {
         alt: lunchItem.name,
         category: ironFocused ? menuCategories[0].title : lunchCategory.title,
         slot: "Lunch",
+        focus: [
+          ...(ironFocused ? ["Iron-rich foods"] : []),
+          ...(proteinFocused ? ["Protein"] : []),
+          ...(surveyAnswers.requirements.includes("Steady energy") ? ["Steady energy"] : []),
+        ],
         reason: ironFocused
           ? "A lentil-and-greens inspired midday meal"
           : proteinFocused
@@ -753,10 +771,14 @@ export default function App() {
         alt: snackItem.name,
         category: menuCategories[2].title,
         slot: "Snack",
+        focus: [
+          ...(vitaminBFocused ? ["Vitamin B foods"] : []),
+          ...(omega6Focused ? ["Omega-6 sources"] : []),
+        ],
         reason: vitaminBFocused
-          ? "A millet-based snack for a more nourishing break"
+          ? "A nourishing bite selected for your Vitamin B foods focus"
           : omega6Focused
-            ? "A seed-and-nut inspired snack option"
+            ? "Selected to align with your Omega-6 sources preference"
             : "A lighter pick to bridge your work or class day",
       },
       {
@@ -764,8 +786,12 @@ export default function App() {
         alt: dinnerItem.name,
         category: calciumFocused ? menuCategories[1].title : dinnerCategory.title,
         slot: "Dinner",
+        focus: [
+          ...(calciumFocused ? ["Calcium + Vitamin D"] : []),
+          ...(lighter ? ["Lighter portions"] : []),
+        ],
         reason: calciumFocused
-          ? "A tofu-forward evening meal"
+          ? "Selected to align with your Calcium + Vitamin D preference"
           : lighter
             ? "A lighter evening option"
             : "A satisfying end-of-day meal",
@@ -773,6 +799,12 @@ export default function App() {
     ];
     setRecommendedMeals(meals);
     setView("recommendations");
+    window.setTimeout(() => {
+      document.getElementById("recommendation-list")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 0);
   };
 
   return (
@@ -1498,14 +1530,15 @@ export default function App() {
             <p className="mt-2 text-xs leading-5 opacity-80">
               This is a demo meal-planning guide based on your self-reported preferences, not a
               medical diagnosis or treatment for a deficiency. Consult a qualified professional
-              for medical nutrition advice.
+              for medical nutrition advice. Survey-focus labels show which selections informed
+              each pick; they do not confirm nutrient levels.
             </p>
           </div>
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
+          <div id="recommendation-list" className="mt-8 grid scroll-mt-24 gap-4 md:grid-cols-3">
             {recommendedMeals.map((meal, index) => (
               <article
                 key={meal.name}
-                className="recommendation-card overflow-hidden rounded-[26px] bg-white/60 dark:bg-[#153639]"
+                className="recommendation-card flex flex-col overflow-hidden rounded-[26px] bg-white/60 dark:bg-[#153639]"
                 style={{ animationDelay: `${index * 90}ms` }}
               >
                 <img
@@ -1514,7 +1547,7 @@ export default function App() {
                   className="h-48 w-full object-cover"
                   loading="lazy"
                 />
-                <div className="p-5">
+                <div className="flex flex-1 flex-col p-5">
                   <p className="text-base font-bold uppercase tracking-[.14em] text-[#688456]">
                     {meal.slot}
                   </p>
@@ -1525,6 +1558,12 @@ export default function App() {
                   <p className="mt-2 text-sm leading-6 text-[#66757a] dark:text-[#b2c9c5]">
                     {meal.reason}
                   </p>
+                  {meal.focus.length > 0 && (
+                    <div className="mt-3 rounded-[16px] bg-[#dfe9d4]/70 px-3 py-2.5 text-xs text-[#45583c] dark:bg-[#294b41] dark:text-[#c6ddbb]">
+                      <p className="font-semibold">Survey focus</p>
+                      <p className="mt-1">{meal.focus.join(" · ")}</p>
+                    </div>
+                  )}
                   <div className="mt-4 flex gap-2 text-xs font-semibold text-[#66757a] dark:text-[#b2c9c5]">
                     <span className="rounded-full bg-[#eef3f4] px-3 py-1.5 dark:bg-white/8">
                       {meal.calories}
@@ -1533,7 +1572,7 @@ export default function App() {
                       {meal.protein} protein
                     </span>
                   </div>
-                  <div className="mt-5 flex items-center justify-between gap-3">
+                  <div className="mt-auto flex items-center justify-between gap-3 pt-5">
                     <span className="text-lg font-bold text-[#688456] dark:text-[#a9c792]">
                       {meal.price}
                     </span>
@@ -1607,6 +1646,11 @@ export default function App() {
                       <div className="min-w-0 flex-1">
                         <p className="font-semibold">{item.name}</p>
                         <p className="text-xs text-[#66757a] dark:text-[#a8bfba]">{item.details}</p>
+                        {item.calories && (
+                          <p className="mt-1 text-xs text-[#66757a] dark:text-[#a8bfba]">
+                            {item.calories} · estimated
+                          </p>
+                        )}
                         <p className="mt-1 text-sm font-bold text-[#688456] dark:text-[#a9c792]">
                           ₹{item.price.toLocaleString("en-IN")}
                         </p>
@@ -1826,8 +1870,8 @@ export default function App() {
                 </p>
                 <div className="mt-6 grid grid-cols-2 gap-3">
                   <div className="rounded-[18px] bg-white/70 p-4 dark:bg-white/8">
-                    <p className="text-xs text-[#66757a] dark:text-[#a8bfba]">Calories</p>
-                    <p className="mt-1 font-semibold">{selectedDish.calories}</p>
+                    <p className="text-xs text-[#66757a] dark:text-[#a8bfba]">Estimated calories</p>
+                    <p className="mt-1 font-semibold">{selectedDishCalories}</p>
                   </div>
                   <div className="rounded-[18px] bg-[#dfe9d4] p-4 text-[#45583c] dark:bg-[#294b41] dark:text-[#c6ddbb]">
                     <p className="text-xs opacity-70">Protein</p>
@@ -1840,6 +1884,10 @@ export default function App() {
                 <div className="mt-6 grid gap-2">
                   <p className="text-xs font-semibold uppercase tracking-[.12em] text-[#688456]">
                     Customize your meal
+                  </p>
+                  <p className="text-xs leading-5 text-[#66757a] dark:text-[#a8bfba]">
+                    Calorie estimates include +25% for a large portion and +100 kcal for extra
+                    protein.
                   </p>
                   <div className="flex gap-2">
                     {(["Regular", "Large"] as const).map((size) => (
