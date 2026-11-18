@@ -991,10 +991,15 @@ export default function App() {
                 </span>
               )}
             </button>
-            <span
-              className="grid size-11 shrink-0 place-items-center rounded-full border border-[#25D366]/25 bg-[#25D366]/10 text-[#25D366] dark:bg-[#25D366]/15"
-              role="img"
-              aria-label="WhatsApp"
+            <a
+              href={`https://api.whatsapp.com/send?text=${encodeURIComponent(
+                "Hi AAHAR, I'd like to know more about your meals.",
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => notify("Redirecting to WhatsApp...")}
+              className="grid size-11 shrink-0 place-items-center rounded-full border border-[#25D366]/25 bg-[#25D366]/10 text-[#25D366] transition-colors hover:bg-[#25D366]/20 dark:bg-[#25D366]/15"
+              aria-label="Open WhatsApp with a message for AAHAR"
               title="WhatsApp"
             >
               <svg
@@ -1010,7 +1015,7 @@ export default function App() {
                 <path d="M20.2 11.5a8.7 8.7 0 0 1-12.9 7.6L3.7 20l.9-3.4a8.7 8.7 0 1 1 15.6-5.1Z" />
                 <path d="M8.1 7.6c.2-.5.4-.5.7-.5h.6c.2 0 .4.1.5.4l.7 1.7c.1.2.1.4 0 .6l-.5.7c-.1.2-.2.3-.1.5.2.4.7 1.2 1.5 1.9.9.8 1.6 1.1 2 .9.2-.1.4-.5.6-.7.1-.2.3-.3.5-.2l1.6.8c.2.1.4.2.4.4 0 .2-.1.8-.5 1.2-.4.4-1 .6-1.5.6-.5 0-1.3-.2-2.7-.8-1.4-.7-2.5-1.8-3.3-2.8-.8-1-1.1-1.8-1.2-2.4-.1-.6.1-1.1.4-1.5Z" />
               </svg>
-            </span>
+            </a>
 
             <button
               onClick={() => setMenuOpen((open) => !open)}
