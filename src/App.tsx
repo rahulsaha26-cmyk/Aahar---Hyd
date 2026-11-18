@@ -432,6 +432,7 @@ type CartItem = {
   image?: string;
   calories?: string;
   protein?: string;
+  preparationNote?: string;
   quantity: number;
   details: string;
   isPlan?: boolean;
@@ -445,6 +446,16 @@ const getAdjustedCalories = (
   const baseCalories = Number.parseInt(calories, 10);
   const portionCalories = portion === "Large" ? Math.round(baseCalories * 1.25) : baseCalories;
   return `${portionCalories + (extraProtein ? 100 : 0)} kcal`;
+};
+
+const getAdjustedProtein = (
+  protein: string,
+  portion: "Regular" | "Large",
+  extraProtein: boolean,
+) => {
+  const baseProtein = Number.parseInt(protein, 10);
+  const portionProtein = portion === "Large" ? Math.round(baseProtein * 1.25) : baseProtein;
+  return `${portionProtein + (extraProtein ? 25 : 0)}g`;
 };
 
 const plans = [
@@ -475,6 +486,7 @@ type SurveyAnswer = {
   concern: string;
   requirements: string[];
   dietary: string;
+  dietaryOther: string;
 };
 
 const surveySteps = [
@@ -513,7 +525,7 @@ const surveySteps = [
     key: "dietary" as const,
     label: "Dietary needs",
     title: "Anything we should avoid or account for?",
-    options: ["No restrictions", "Vegetarian", "Avoid dairy", "Avoid nuts"],
+    options: ["No restrictions", "Vegetarian", "Avoid dairy", "Avoid nuts", "Other"],
   },
 ];
 
@@ -525,12 +537,25 @@ export default function App() {
   const [activeMenu, setActiveMenu] = useState(0);
   const [menuType, setMenuType] = useState<"veg" | "nonveg">("veg");
   const [selectedDish, setSelectedDish] = useState<SelectedDish | null>(null);
-  const [selectedDishOrigin, setSelectedDishOrigin] = useState<"home" | "recommendations">("home");
+  const [selectedDishOrigin, setSelectedDishOrigin] = useState<
+    "home" | "recommendations" | "cart"
+  >("home");
   const [portion, setPortion] = useState<"Regular" | "Large">("Regular");
   const [extraProtein, setExtraProtein] = useState(false);
+  const [preparationNote, setPreparationNote] = useState("");
+  const [editingCartItemKey, setEditingCartItemKey] = useState<string | null>(null);
+  const [pendingCartItem, setPendingCartItem] = useState<CartItem | null>(null);
   const [cart, setCart] = useState<CartItem[]>(() => {
     try {
       const saved = localStorage.getItem("aahar-cart");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [lastOrder, setLastOrder] = useState<CartItem[]>(() => {
+    try {
+      const saved = localStorage.getItem("aahar-last-order");
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -546,6 +571,7 @@ export default function App() {
     concern: "",
     requirements: [],
     dietary: "",
+    dietaryOther: "",
   });
   const [recommendedMeals, setRecommendedMeals] = useState<
     (SelectedDish & { slot: string; reason: string; focus: string[] })[]
@@ -563,6 +589,10 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem("aahar-cart", JSON.stringify(cart));
   }, [cart]);
+
+  useEffect(() => {
+    localStorage.setItem("aahar-last-order", JSON.stringify(lastOrder));
+  }, [lastOrder]);
 
   useEffect(() => {
     const elements = document.querySelectorAll<HTMLElement>("[data-reveal]");
@@ -598,6 +628,17 @@ export default function App() {
     };
   }, [selectedDish]);
 
+  useEffect(() => {
+    if (!pendingCartItem) return;
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setPendingCartItem(null);
+    };
+
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [pendingCartItem]);
+
   const notify = (message: string) => {
     setToast(message);
     window.setTimeout(() => setToast(""), 2600);
@@ -605,8 +646,12 @@ export default function App() {
 
   const closeDishDetails = () => {
     setSelectedDish(null);
+    setEditingCartItemKey(null);
+    setPreparationNote("");
     if (selectedDishOrigin === "recommendations") {
       setView("recommendations");
+    } else if (selectedDishOrigin === "cart") {
+      setView("cart");
     }
   };
 
@@ -627,11 +672,15 @@ export default function App() {
   const selectedDishCalories = selectedDish
     ? getAdjustedCalories(selectedDish.calories, portion, extraProtein)
     : "";
+  const selectedDishProtein = selectedDish
+    ? getAdjustedProtein(selectedDish.protein, portion, extraProtein)
+    : "";
 
   const addMealToCart = (
     dish: SelectedDish,
     selectedPortion: "Regular" | "Large" = "Regular",
     includeExtraProtein = false,
+    preparationNote = "",
   ) => {
     const basePrice = Number(dish.price.replace(/[^\d]/g, ""));
     const price =
@@ -639,7 +688,7 @@ export default function App() {
     const details = [selectedPortion, includeExtraProtein ? "Extra protein" : ""]
       .filter(Boolean)
       .join(" · ");
-    const key = `${dish.name}-${details}`;
+    const key = `${dish.name}-${details}${preparationNote ? `-${preparationNote}` : ""}`;
     setCart((items) => {
       const existing = items.find((item) => item.key === key);
       if (existing) {
@@ -655,7 +704,8 @@ export default function App() {
           price,
           image: dish.image,
           calories: getAdjustedCalories(dish.calories, selectedPortion, includeExtraProtein),
-          protein: dish.protein,
+          protein: getAdjustedProtein(dish.protein, selectedPortion, includeExtraProtein),
+          preparationNote: preparationNote || undefined,
           quantity: 1,
           details,
         },
@@ -666,13 +716,86 @@ export default function App() {
 
   const addDishToCart = () => {
     if (!selectedDish) return;
-    addMealToCart(selectedDish, portion, extraProtein);
+    const note = preparationNote.trim();
+    if (editingCartItemKey) {
+      const basePrice = Number(selectedDish.price.replace(/[^\d]/g, ""));
+      const price = basePrice + (portion === "Large" ? 30 : 0) + (extraProtein ? 30 : 0);
+      const details = [portion, extraProtein ? "Extra protein" : ""].filter(Boolean).join(" · ");
+      const key = `${selectedDish.name}-${details}${note ? `-${note}` : ""}`;
+      setCart((items) => {
+        const editedItem = items.find((item) => item.key === editingCartItemKey);
+        if (!editedItem) return items;
+        const updatedItem: CartItem = {
+          ...editedItem,
+          key,
+          price,
+          image: selectedDish.image,
+          calories: getAdjustedCalories(selectedDish.calories, portion, extraProtein),
+          protein: getAdjustedProtein(selectedDish.protein, portion, extraProtein),
+          preparationNote: note || undefined,
+          details,
+        };
+        const remainingItems = items.filter((item) => item.key !== editingCartItemKey);
+        const duplicate = remainingItems.find((item) => item.key === key);
+        if (duplicate) {
+          return remainingItems.map((item) =>
+            item.key === key ? { ...item, quantity: item.quantity + editedItem.quantity } : item,
+          );
+        }
+        return [...remainingItems, updatedItem];
+      });
+      notify(`${selectedDish.name} updated in your cart`);
+      setView("cart");
+    } else {
+      addMealToCart(selectedDish, portion, extraProtein, note);
+    }
     setSelectedDish(null);
+    setEditingCartItemKey(null);
     setPortion("Regular");
     setExtraProtein(false);
+    setPreparationNote("");
     if (selectedDishOrigin === "recommendations") {
       setView("recommendations");
+    } else if (selectedDishOrigin === "cart") {
+      setView("cart");
     }
+  };
+
+  const openCartMeal = (item: CartItem, editExisting: boolean) => {
+    const category = [...menuCategories, ...nonVegMenuCategories].find((menuCategory) =>
+      menuCategory.items.some((dish) => dish.name === item.name),
+    );
+    const dish = category?.items.find((menuItem) => menuItem.name === item.name);
+    if (!category || !dish) {
+      notify("This meal can’t be customized from the cart.");
+      return;
+    }
+
+    setPendingCartItem(null);
+    setEditingCartItemKey(editExisting ? item.key : null);
+    setSelectedDishOrigin("cart");
+    setSelectedDish({ ...dish, alt: dish.name, category: category.title });
+    setPortion(item.details.split(" · ").includes("Large") ? "Large" : "Regular");
+    setExtraProtein(item.details.split(" · ").includes("Extra protein"));
+    setPreparationNote(item.preparationNote ?? "");
+  };
+
+  const repeatLastOrder = () => {
+    setCart((items) => {
+      const nextItems = [...items];
+      lastOrder.forEach((lastItem) => {
+        const existing = nextItems.find((item) => item.key === lastItem.key);
+        if (existing) {
+          const index = nextItems.indexOf(existing);
+          nextItems[index] = { ...existing, quantity: existing.quantity + lastItem.quantity };
+        } else {
+          nextItems.push({ ...lastItem });
+        }
+      });
+      return nextItems;
+    });
+    setView("cart");
+    notify("Your last order was added to the cart");
   };
 
   const addPlanToCart = (plan: (typeof plans)[number]) => {
@@ -683,6 +806,7 @@ export default function App() {
         key: `plan-${plan.name}`,
         name: plan.name,
         price,
+        image: images.hero,
         quantity: 1,
         details: plan.note,
         isPlan: true,
@@ -707,13 +831,20 @@ export default function App() {
     }
     setCheckoutError("");
     setOrderNumber(`AH${Math.floor(1000 + Math.random() * 9000)}`);
+    setLastOrder(cart);
     setCart([]);
     setView("done");
   };
 
   const startSurvey = () => {
     setSurveyStep(0);
-    setSurveyAnswers({ routine: "", concern: "", requirements: [], dietary: "" });
+    setSurveyAnswers({
+      routine: "",
+      concern: "",
+      requirements: [],
+      dietary: "",
+      dietaryOther: "",
+    });
     setView("survey");
   };
 
@@ -1099,6 +1230,10 @@ export default function App() {
                           key={item.name}
                           onClick={() => {
                             setSelectedDishOrigin("home");
+                            setEditingCartItemKey(null);
+                            setPortion("Regular");
+                            setExtraProtein(false);
+                            setPreparationNote("");
                             setSelectedDish({
                               ...item,
                               image: item.image,
@@ -1373,7 +1508,7 @@ export default function App() {
           >
             <LogoMark className="mx-auto size-32" />
             <h2 className="mx-auto mt-6 max-w-2xl text-balance text-4xl font-semibold tracking-[-.055em] sm:text-5xl">
-              Your everyday lunch, sorted.
+              Your everyday meal, sorted.
             </h2>
             <p className="mx-auto mt-4 max-w-lg text-sm leading-6 text-white/60 sm:text-base">
               Flexible meal plans for individuals, teams and campuses in Hyderabad.
@@ -1478,6 +1613,23 @@ export default function App() {
                   );
                 })}
               </div>
+              {surveySteps[surveyStep].key === "dietary" && surveyAnswers.dietary === "Other" && (
+                <div className="mt-5">
+                  <label htmlFor="dietary-other">What should we avoid?</label>
+                  <textarea
+                    id="dietary-other"
+                    rows={3}
+                    value={surveyAnswers.dietaryOther}
+                    onChange={(event) =>
+                      setSurveyAnswers({ ...surveyAnswers, dietaryOther: event.target.value })
+                    }
+                    placeholder="Tell us which ingredients or foods to avoid"
+                  />
+                  <p className="mt-2 text-xs leading-5 text-[#66757a] dark:text-[#a8bfba]">
+                    We’ll include this as a preparation note with your selected meals.
+                  </p>
+                </div>
+              )}
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 {surveyStep > 0 && (
                   <button
@@ -1491,7 +1643,10 @@ export default function App() {
                   disabled={
                     Array.isArray(surveyAnswers[surveySteps[surveyStep].key])
                       ? surveyAnswers[surveySteps[surveyStep].key].length === 0
-                      : !surveyAnswers[surveySteps[surveyStep].key]
+                      : !surveyAnswers[surveySteps[surveyStep].key] ||
+                        (surveySteps[surveyStep].key === "dietary" &&
+                          surveyAnswers.dietary === "Other" &&
+                          !surveyAnswers.dietaryOther.trim())
                   }
                   onClick={() =>
                     surveyStep === surveySteps.length - 1
@@ -1536,7 +1691,10 @@ export default function App() {
           <div className="mt-6 rounded-[22px] border border-[#688456]/20 bg-[#dfe9d4]/70 p-4 text-sm text-[#45583c] dark:bg-[#294b41] dark:text-[#c6ddbb]">
             <p className="font-semibold">Your plan focus</p>
             <p className="mt-1">
-              {surveyAnswers.concern} · {surveyAnswers.dietary}
+              {surveyAnswers.concern} ·{" "}
+              {surveyAnswers.dietary === "Other"
+                ? `Avoid: ${surveyAnswers.dietaryOther.trim()}`
+                : surveyAnswers.dietary}
             </p>
             <p className="mt-2 text-xs leading-5 opacity-80">
               This is a demo meal-planning guide based on your self-reported preferences, not a
@@ -1590,9 +1748,15 @@ export default function App() {
                     <button
                       onClick={() => {
                         setSelectedDishOrigin("recommendations");
+                        setEditingCartItemKey(null);
                         setSelectedDish(meal);
                         setPortion("Regular");
                         setExtraProtein(false);
+                        setPreparationNote(
+                          surveyAnswers.dietary === "Other"
+                            ? surveyAnswers.dietaryOther.trim()
+                            : "",
+                        );
                       }}
                       className="primary-button px-4 py-2.5"
                     >
@@ -1619,9 +1783,16 @@ export default function App() {
               <p className="section-label">Your order</p>
               <h1 className="section-title">Build your meal box.</h1>
             </div>
-            <button onClick={() => setView("home")} className="secondary-button px-4 py-3">
-              Continue browsing
-            </button>
+            <div className="flex flex-wrap justify-end gap-2">
+              {cart.length > 0 && lastOrder.length > 0 && (
+                <button onClick={repeatLastOrder} className="secondary-button px-4 py-3">
+                  Repeat last order
+                </button>
+              )}
+              <button onClick={() => setView("home")} className="secondary-button px-4 py-3">
+                Continue browsing
+              </button>
+            </div>
           </div>
 
           {cart.length === 0 ? (
@@ -1630,14 +1801,21 @@ export default function App() {
               <p className="mt-2 text-sm text-[#66757a] dark:text-[#a8bfba]">
                 Add a meal or choose a plan to get started.
               </p>
-              <button onClick={() => scrollTo("meals")} className="primary-button mt-6">
-                Browse meals <Icon name="arrow" className="size-4" />
-              </button>
+              <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
+                {lastOrder.length > 0 && (
+                  <button onClick={repeatLastOrder} className="primary-button justify-center">
+                    Repeat last order <Icon name="arrow" className="size-4" />
+                  </button>
+                )}
+                <button onClick={() => scrollTo("meals")} className="secondary-button justify-center px-5 py-3">
+                  Browse meals
+                </button>
+              </div>
             </div>
           ) : (
             <div className="mt-8 grid gap-5 lg:grid-cols-[1.2fr_.8fr]">
               <div className="rounded-[30px] bg-white/60 p-4 dark:bg-[#123235] sm:p-6">
-                <div className="grid gap-3">
+                <div className="grid max-h-[70vh] gap-3 overflow-y-auto overscroll-contain pr-2">
                   {cart.map((item) => (
                     <div
                       key={item.key}
@@ -1657,14 +1835,29 @@ export default function App() {
                       <div className="min-w-0 flex-1">
                         <p className="font-semibold">{item.name}</p>
                         <p className="text-xs text-[#66757a] dark:text-[#a8bfba]">{item.details}</p>
+                        {item.preparationNote && (
+                          <p className="mt-1 break-words text-xs leading-5 text-[#45583c] dark:text-[#c6ddbb]">
+                            <span className="font-semibold">Kitchen note:</span>{" "}
+                            {item.preparationNote}
+                          </p>
+                        )}
                         {item.calories && (
                           <p className="mt-1 text-xs text-[#66757a] dark:text-[#a8bfba]">
-                            {item.calories} · estimated
+                            {item.calories}
+                            {item.protein ? ` · ${item.protein} protein` : ""} · estimated
                           </p>
                         )}
                         <p className="mt-1 text-sm font-bold text-[#688456] dark:text-[#a9c792]">
                           ₹{item.price.toLocaleString("en-IN")}
                         </p>
+                        {!item.isPlan && (
+                          <button
+                            onClick={() => openCartMeal(item, true)}
+                            className="mt-1 text-xs font-semibold text-[#688456] underline underline-offset-2 dark:text-[#a9c792]"
+                          >
+                            Customize meal
+                          </button>
+                        )}
                       </div>
                       <div className="flex items-center gap-2">
                         <button
@@ -1681,9 +1874,15 @@ export default function App() {
                           {item.quantity}
                         </span>
                         <button
-                          onClick={() => updateQuantity(item.key, 1)}
+                          onClick={() =>
+                            item.isPlan
+                              ? updateQuantity(item.key, 1)
+                              : setPendingCartItem(item)
+                          }
                           className="icon-button size-9"
-                          aria-label={`Increase ${item.name} quantity`}
+                          aria-label={
+                            item.isPlan ? `Increase ${item.name} quantity` : `Add another ${item.name}`
+                          }
                         >
                           +
                         </button>
@@ -1787,9 +1986,16 @@ export default function App() {
               <div className="mt-4 grid gap-3 text-sm text-white/75">
                 {cart.map((item) => (
                   <div key={item.key} className="flex justify-between gap-4">
-                    <span>
-                      {item.quantity} × {item.name}
-                    </span>
+                    <div>
+                      <span>
+                        {item.quantity} × {item.name}
+                      </span>
+                      {item.preparationNote && (
+                        <p className="mt-1 text-xs text-white/65">
+                          Kitchen note: {item.preparationNote}
+                        </p>
+                      )}
+                    </div>
                     <span>₹{(item.price * item.quantity).toLocaleString("en-IN")}</span>
                   </div>
                 ))}
@@ -1810,7 +2016,7 @@ export default function App() {
               <Icon name="check" className="size-7" />
             </div>
             <p className="section-label mt-6">Order received</p>
-            <h1 className="section-title mx-auto">Your everyday lunch is sorted.</h1>
+            <h1 className="section-title mx-auto">Your everyday meal is sorted.</h1>
             <p className="mt-5 text-sm leading-6 text-[#66757a] dark:text-[#a8bfba]">
               Thanks, {customer.name || "there"}. We’ve saved your request and will contact you at{" "}
               {customer.phone || "your phone number"} with the next steps.
@@ -1886,7 +2092,7 @@ export default function App() {
                   </div>
                   <div className="rounded-[18px] bg-[#dfe9d4] p-4 text-[#45583c] dark:bg-[#294b41] dark:text-[#c6ddbb]">
                     <p className="text-xs opacity-70">Protein</p>
-                    <p className="mt-1 font-semibold">{selectedDish.protein}</p>
+                    <p className="mt-1 font-semibold">{selectedDishProtein}</p>
                   </div>
                 </div>
                 <p className="mt-5 text-sm leading-6 text-[#66757a] dark:text-[#a8bfba]">
@@ -1897,8 +2103,8 @@ export default function App() {
                     Customize your meal
                   </p>
                   <p className="text-xs leading-5 text-[#66757a] dark:text-[#a8bfba]">
-                    Calorie estimates include +25% for a large portion and +100 kcal for extra
-                    protein.
+                    Nutrition estimates include +25% for a large portion and +100 kcal / +25g
+                    protein for extra protein.
                   </p>
                   <div className="flex gap-2">
                     {(["Regular", "Large"] as const).map((size) => (
@@ -1928,15 +2134,80 @@ export default function App() {
                   >
                     {extraProtein ? "✓ " : ""}Extra protein +₹30
                   </button>
+                  <label htmlFor="meal-preparation-note">Specific changes / foods to avoid</label>
+                  <textarea
+                    id="meal-preparation-note"
+                    rows={2}
+                    value={preparationNote}
+                    onChange={(event) => setPreparationNote(event.target.value)}
+                    placeholder="e.g. avoid onion, less spice, sauce on the side"
+                    className="text-sm"
+                  />
                 </div>
                 <button
                   onClick={addDishToCart}
                   className="primary-button add-to-cart-button mt-auto justify-center py-3.5 sm:mt-8"
                 >
-                  Add to cart <Icon name="arrow" className="size-4" />
+                  {editingCartItemKey ? "Save changes" : "Add to cart"}{" "}
+                  <Icon name="arrow" className="size-4" />
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {pendingCartItem && (
+        <div
+          className="fixed inset-0 z-50 grid place-items-center bg-[#07191a]/70 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="add-another-title"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setPendingCartItem(null);
+          }}
+        >
+          <div className="modal-enter w-full max-w-md rounded-[30px] bg-[#edf3f2] p-6 text-[#101313] shadow-[0_30px_100px_rgba(0,0,0,.35)] dark:bg-[#153639] dark:text-[#eef7f4] sm:p-8">
+            <p className="section-label">Add to your meal box</p>
+            <h2
+              id="add-another-title"
+              className="text-2xl font-semibold tracking-[-.04em]"
+            >
+              Add another {pendingCartItem.name}?
+            </h2>
+            <p className="mt-3 text-sm leading-6 text-[#66757a] dark:text-[#a8bfba]">
+              Repeat this meal as-is, or customize a new portion and preparation note.
+            </p>
+            <p className="mt-4 rounded-[16px] bg-white/70 px-4 py-3 text-xs text-[#66757a] dark:bg-white/8 dark:text-[#a8bfba]">
+              Current selection: {pendingCartItem.details}
+              {pendingCartItem.preparationNote
+                ? ` · ${pendingCartItem.preparationNote}`
+                : ""}
+            </p>
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <button
+                onClick={() => {
+                  updateQuantity(pendingCartItem.key, 1);
+                  setPendingCartItem(null);
+                  notify(`${pendingCartItem.name} added to your cart`);
+                }}
+                className="secondary-button justify-center px-4 py-3"
+              >
+                Repeat last
+              </button>
+              <button
+                onClick={() => openCartMeal(pendingCartItem, false)}
+                className="primary-button justify-center px-4 py-3"
+              >
+                Customize new
+              </button>
+            </div>
+            <button
+              onClick={() => setPendingCartItem(null)}
+              className="mt-4 w-full py-2 text-sm font-semibold text-[#66757a] dark:text-[#a8bfba]"
+            >
+              Cancel
+            </button>
           </div>
         </div>
       )}
