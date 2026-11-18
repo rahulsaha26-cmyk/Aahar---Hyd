@@ -463,10 +463,10 @@ const plans = [
     note: "Two weekday meals daily",
   },
   {
-    name: "Student plan",
-    price: "₹1,999",
-    benefit: "Affordable monthly meals",
-    note: "Monthly · valid student ID required",
+    name: "Whole-day monthly",
+    price: "₹5,499",
+    benefit: "66 meals · about ₹83 each",
+    note: "Breakfast, lunch & dinner",
   },
 ];
 
@@ -482,7 +482,7 @@ const surveySteps = [
     key: "routine" as const,
     label: "Your routine",
     title: "Who are we planning meals for?",
-    options: ["Student schedule", "Corporate workday", "Mixed routine"],
+    options: ["Individual schedule", "Corporate workday", "Mixed routine"],
   },
   {
     key: "concern" as const,
@@ -525,9 +525,7 @@ export default function App() {
   const [activeMenu, setActiveMenu] = useState(0);
   const [menuType, setMenuType] = useState<"veg" | "nonveg">("veg");
   const [selectedDish, setSelectedDish] = useState<SelectedDish | null>(null);
-  const [selectedDishOrigin, setSelectedDishOrigin] = useState<"home" | "recommendations">(
-    "home",
-  );
+  const [selectedDishOrigin, setSelectedDishOrigin] = useState<"home" | "recommendations">("home");
   const [portion, setPortion] = useState<"Regular" | "Large">("Regular");
   const [extraProtein, setExtraProtein] = useState(false);
   const [cart, setCart] = useState<CartItem[]>(() => {
@@ -638,10 +636,7 @@ export default function App() {
     const basePrice = Number(dish.price.replace(/[^\d]/g, ""));
     const price =
       basePrice + (selectedPortion === "Large" ? 30 : 0) + (includeExtraProtein ? 30 : 0);
-    const details = [
-      selectedPortion,
-      includeExtraProtein ? "Extra protein" : "",
-    ]
+    const details = [selectedPortion, includeExtraProtein ? "Extra protein" : ""]
       .filter(Boolean)
       .join(" · ");
     const key = `${dish.name}-${details}`;
@@ -1454,7 +1449,9 @@ export default function App() {
                 {surveySteps[surveyStep].options.map((option) => {
                   const key = surveySteps[surveyStep].key;
                   const answer = surveyAnswers[key];
-                  const selected = Array.isArray(answer) ? answer.includes(option) : answer === option;
+                  const selected = Array.isArray(answer)
+                    ? answer.includes(option)
+                    : answer === option;
                   return (
                     <button
                       key={option}
@@ -1543,9 +1540,9 @@ export default function App() {
             </p>
             <p className="mt-2 text-xs leading-5 opacity-80">
               This is a demo meal-planning guide based on your self-reported preferences, not a
-              medical diagnosis or treatment for a deficiency. Consult a qualified professional
-              for medical nutrition advice. Survey-focus labels show which selections informed
-              each pick; they do not confirm nutrient levels.
+              medical diagnosis or treatment for a deficiency. Consult a qualified professional for
+              medical nutrition advice. Survey-focus labels show which selections informed each
+              pick; they do not confirm nutrient levels.
             </p>
           </div>
           <div id="recommendation-list" className="mt-8 grid scroll-mt-24 gap-4 md:grid-cols-3">
